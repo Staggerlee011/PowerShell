@@ -79,10 +79,21 @@ Will restart the servers sql agent service if no jobs are currently running
                              $instance = $ServerInstance.Item(1)
                         }
 
-                    $RunningJobs = Invoke-Sqlcmd -ServerInstance $hostname -Database msdb -Query $tsql
+                    
+                    $SqlConnection = New-Object System.Data.SqlClient.SqlConnection
+                    $SqlConnection.ConnectionString = "Server=$Server;Database=msdb;Integrated Security=True"
+                    $SqlCmd = New-Object System.Data.SqlClient.SqlCommand
+                    $SqlCmd.CommandText = $Tsql
+                    $SqlCmd.Connection = $SqlConnection
+                    $SqlAdapter = New-Object System.Data.SqlClient.SqlDataAdapter
+                    $SqlAdapter.SelectCommand = $SqlCmd
+                    $RunningJobs = New-Object System.Data.DataSet
+                    $null = $SqlAdapter.Fill($RunningJobs)
+                    $SqlConnection.Close()
+                    $jobsRunning = $RunningJobs.Tables[0].Rows.Count
 
                     # restart service 
-                    IF (!($RunningJobs))
+                    IF (!($jobsRunning))
                        {
                            IF(!( $Server.contains("\")))
                                {
@@ -107,7 +118,7 @@ Will restart the servers sql agent service if no jobs are currently running
                            Write-verbose "There are jobs running on Agent please wait till they are finished on: $server"
                            $objTemp.SQLInstance = $Server
                            $objTemp.RestartedAgent = "No"
-                           $objTemp.FailureReason = "Jobs running on Agent"
+                           $objTemp.FailureReason = "$jobsRunning Job(s) running on Agent"
                        }
                     $output += $objTemp
                 }
