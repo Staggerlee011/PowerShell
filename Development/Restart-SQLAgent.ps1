@@ -57,7 +57,7 @@ Will restart the servers sql agent service if no jobs are currently running
                     $objTemp | Add-Member -MemberType NoteProperty -Name FailureReason -Value ""  
                     
                     ## WhatIf 
-                    IF ($Pscmdlet.ShouldProcess($hostid, $hostname, $NamedSQLAgent))
+                    IF ($Pscmdlet.ShouldProcess($hostname, "Restart SQL Server Agent Service $NamedSQLAgent"))
 			            {
 
                             IF ($Server.contains("\"))
