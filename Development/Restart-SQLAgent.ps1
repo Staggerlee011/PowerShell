@@ -126,8 +126,8 @@ Will restart the servers sql agent service if no jobs are currently running
 
                                     WHILE ($loop -lt $jobsRunning)
                                         {
-                                            $i = $RunningJobs.Tables[0][$loop].name
-                                            $jobs = "$jobs $i ||"
+                                            $RunningJobs.Tables[0][$loop].name
+                                            $jobs =  [string]::Join(" | ",$RunningJobs.Tables[0][$loop].name)
                                             $loop ++
                                         }
 
