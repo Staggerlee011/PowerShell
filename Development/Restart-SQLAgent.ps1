@@ -57,36 +57,35 @@ Will restart the servers sql agent service if no jobs are currently running
                     $objTemp | Add-Member -MemberType NoteProperty -Name FailureReason -Value ""  
                     
                     ## WhatIf 
-                    IF ($Pscmdlet.ShouldProcess( "local", "Resolving IP and Hostname for $ServerInstance"))
+                    IF ($Pscmdlet.ShouldProcess($hostid, $hostname, $NamedSQLAgent))
 			            {
 
                             IF ($Server.contains("\"))
                                 {
-                                     $ServerInstance = $Server.Split("{\}")
-                                     $hostid = $ServerInstance.Item(0)
-                                     $instance = $ServerInstance.Item(1)
+                                    $ServerInstance = $Server.Split("{\}")
+                                    $hostid = $ServerInstance.Item(0)
+                                    $instance = $ServerInstance.Item(1)
                                 }
                             ELSE
                                 {
-
 	                                $hostid = $server
 	                                $instance = "MSSQLSERVER"
 	                            }     
                                
-                           TRY 
+                            TRY 
                                {
-                                   $ipaddr = (Test-Connection $hostid -Count 1 -ErrorAction Stop).Ipv4Address
-                                   $hostname = [System.Net.Dns]::gethostentry($ipaddr)
-                                   $hostname = $hostname.HostName
+                                    $ipaddr = (Test-Connection $hostid -Count 1 -ErrorAction Stop).Ipv4Address
+                                    $hostname = [System.Net.Dns]::gethostentry($ipaddr)
+                                    $hostname = $hostname.HostName
                                }
-                           CATCH
+                            CATCH
                                {
-                                   Write-Verbose "Failed to connect to: $Server"
-                                   $objTemp.SQLInstance = $Server
-                                   $objTemp.RestartedAgent = "Failure"
-                                   $objTemp.FailureReason = "Could not connect to server"
-                                   $output += $objTemp
-                                   continue
+                                    Write-Verbose "Failed to connect to: $Server"
+                                    $objTemp.SQLInstance = $Server
+                                    $objTemp.RestartedAgent = "Failure"
+                                    $objTemp.FailureReason = "Could not connect to server"
+                                    $output += $objTemp
+                                    continue
                                }
 
                             $SqlConnection = New-Object System.Data.SqlClient.SqlConnection
@@ -103,24 +102,21 @@ Will restart the servers sql agent service if no jobs are currently running
 
                             # restart service 
                             IF (!($jobsRunning))
-                               {
-                                   IF(!( $Server.contains("\")))
-                                       {
-                                           Write-Verbose "Restarting SQL Agent Service on: $Server"
-                                           Get-Service -ComputerName $hostname SQLSERVERAGENT | Restart-Service -WarningAction SilentlyContinue 
-                                           $objTemp.SQLInstance = $Server
-                                           $objTemp.RestartedAgent = "Success"
-                                           $objTemp.FailureReason = ""
-                                       }
-                                   ELSE
-                                       {
-                                           $NamedSQLAgent = "SQLAgent$" + $instance
-                                           Write-Verbose "Restarting SQL Agent Service : $NamedSQLAgent"
-                                           Get-Service -ComputerName $hostname $NamedSQLAgent | Restart-Service -WarningAction SilentlyContinue 
-                                           $objTemp.SQLInstance = $Server
-                                           $objTemp.RestartedAgent = "Success"
-                                           $objTemp.FailureReason = ""
-                                       }
+                                {
+                                    IF(!( $Server.contains("\")))
+                                        { 
+                                            $NamedSQLAgent = "SQLSERVERAGENT"
+                                        }
+                                    ELSE
+                                        {
+                                            $NamedSQLAgent = "SQLAgent$" + $instance
+                                        }
+
+                                    Write-Verbose "Restarting SQL Agent Service : $NamedSQLAgent"
+                                    Get-Service -ComputerName $hostname $NamedSQLAgent | Restart-Service -WarningAction SilentlyContinue 
+                                    $objTemp.SQLInstance = $Server
+                                    $objTemp.RestartedAgent = "Success"
+                                    $objTemp.FailureReason = ""
                                }
                             ELSE
                                {
@@ -143,7 +139,6 @@ Will restart the servers sql agent service if no jobs are currently running
                         }
                 }
         }
-
     END
         {
             return ($output)
