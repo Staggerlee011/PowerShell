@@ -13,7 +13,7 @@ User name to return information on
 Default value is 10, but can be changed to any INT value
 
 .NOTES
-No support is avilable for this function 
+Based on http://www.tomsitpro.com/articles/powershell-active-directory-lockouts,2-848.html code
 
 .EXAMPLE
 Get-AccountLockOut -UserName ‘firstname.surname’ -MaxEvents 11
@@ -24,14 +24,11 @@ Returns the last 11 lock out events for ‘firstname.surname’
     param (
         [string]$UserName,
         [int]$MaxEvents = 10
-
     )
-
     process 
     {
         ## Find the domain controller PDCe role
-        $Pdce = (Get-AdDomain).PDCEmulator
-        
+        $Pdce = (Get-AdDomain).PDCEmulator     
         ## Build the parameters to pass to Get-WinEvent
         $GweParams = @{
              ‘Computername’ = $Pdce
@@ -40,22 +37,22 @@ Returns the last 11 lock out events for ‘firstname.surname’
         }
         
         ## Query the security event log
-        $Events = Get-WinEvent @GweParams -MaxEvents $MaxEvents
-        
-        ## results
-        $output = @()
-        foreach ($event in $Events)
+        try
         {
-            $obj = New-Object psobject -Property @{
-                Server = $event[0].Properties[1].Value;
-                Time = $event.TimeCreated;
-            }
-            $output += $obj 
-        } # forecah
-        
-        ## output
-        $output
-    } # process
+            $events = Get-WinEvent @GweParams -MaxEvents $MaxEvents -ErrorAction Stop
+            foreach ($event in $events)
+            {
+                [pscustomobject]@{
+                    Server = $event[0].Properties[1].Value;
+                    Time = $event.TimeCreated
+                }
+            } 
+        }
+        catch
+        {
+            Write-Output "No lockouts found for the login: $UserName"
+        }
 
-} # function
+    } 
+} 
 
